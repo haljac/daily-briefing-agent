@@ -1,0 +1,27 @@
+[project]
+name = "daily-briefing-agent"
+version = "0.1.0"
+description = "A simple agentic daily briefing application."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "python-dotenv>=1.1.1",
+    "textual>=5.2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["packages/daily_briefing_agent"]
+
+[project.scripts]
+dev = "daily_briefing_agent.main:main"
