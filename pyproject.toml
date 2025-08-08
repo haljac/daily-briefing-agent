@@ -1,27 +1,39 @@
 [project]
 name = "daily-briefing-agent"
 version = "0.1.0"
-description = "A simple agentic daily briefing application."
+description = "AI Daily Summary Bot Development Framework"
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = [
-    "python-dotenv>=1.1.1",
-    "textual>=5.2.0",
-]
+requires-python = ">=3.12"
+dependencies = []
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.rye]
-managed = true
+[tool.uv.workspace]
+members = [
+    "packages/aidb-ai",
+    "packages/aidb-tui"
+]
+
+[tool.uv]
 dev-dependencies = []
 
-[tool.hatch.metadata]
-allow-direct-references = true
+[tool.ruff]
+target-version = "py312"
+line-length = 100
 
-[tool.hatch.build.targets.wheel]
-packages = ["packages/daily_briefing_agent"]
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "B", "UP", "S", "C4", "PIE", "SIM", "RET", "ARG", "PTH", "ERA", "PL", "RUF"]
+ignore = []
 
-[project.scripts]
-dev = "daily_briefing_agent.main:main"
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PLR2004"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["aidb_ai", "aidb_tui"]
