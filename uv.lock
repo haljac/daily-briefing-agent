@@ -33,6 +33,7 @@ dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "pydantic-ai" },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
@@ -41,6 +42,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.25.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-ai", specifier = ">=0.0.14" },
+    { name = "python-dotenv" },
 ]
 
 [[package]]
