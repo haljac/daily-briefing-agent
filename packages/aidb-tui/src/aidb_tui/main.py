@@ -14,6 +14,10 @@ from aidb_ai.main import AIDBAgent
 # Initialize Rich console with color support
 console = Console()
 
+# Constants for zip code validation
+ZIP_CODE_MIN_LENGTH = 5
+ZIP_CODE_FULL_LENGTH = 10
+
 # Initialize Typer app
 app = typer.Typer(
     name="aidb",
@@ -29,16 +33,45 @@ class Session:
         self.agent = AIDBAgent()
         self.session_start = datetime.now()
 
+    async def initialize(self) -> None:
+        """Initialize session, prompting for configuration if needed."""
+        await self.ensure_zip_code()
+
+    async def ensure_zip_code(self) -> None:
+        """Ensure zip code is configured, prompting if necessary."""
+        if self.agent.needs_zip_code():
+            console.print("\n[yellow]⚙️  First-time setup required[/yellow]")
+            console.print("To provide accurate weather information, please provide your zip code.")
+
+            while True:
+                zip_code = Prompt.ask("[cyan]Enter your zip code[/cyan]", console=console)
+
+                if zip_code and zip_code.strip():
+                    zip_code = zip_code.strip()
+                    # Basic validation - US zip codes are 5 digits or 5+4 format
+                    if len(zip_code) >= ZIP_CODE_MIN_LENGTH and (
+                        zip_code[:ZIP_CODE_MIN_LENGTH].isdigit()
+                        or (
+                            len(zip_code) == ZIP_CODE_FULL_LENGTH
+                            and zip_code[:ZIP_CODE_MIN_LENGTH].isdigit()
+                            and zip_code[ZIP_CODE_MIN_LENGTH] == "-"
+                            and zip_code[ZIP_CODE_MIN_LENGTH + 1 :].isdigit()
+                        )
+                    ):
+                        self.agent.set_zip_code(zip_code)
+                        console.print(
+                            f"[green]✅ Zip code {zip_code} saved to configuration[/green]"
+                        )
+                        break
+                    console.print(
+                        "[red]❌ Please enter a valid zip code (e.g., 12345 or 12345-6789)[/red]"
+                    )
+                else:
+                    console.print("[red]❌ Zip code cannot be empty[/red]")
+
     async def get_daily_briefing(self) -> str:
         """Get the initial daily briefing."""
-        briefing_prompt = """
-        Please provide my daily briefing including:
-        1. Current weather information for my location
-        2. Top news headlines with brief summaries
-        
-        Keep it concise but informative.
-        """
-        return await self.agent.request_async(briefing_prompt)
+        return await self.agent.get_daily_briefing()
 
     async def chat_response(self, message: str) -> str:
         """Get a response from the AI agent."""
@@ -56,19 +89,14 @@ def display_welcome():
         welcome_text,
         subtitle="Your intelligent daily companion",
         border_style="bright_blue",
-        padding=(1, 2)
+        padding=(1, 2),
     )
     console.print(panel)
 
 
 def display_daily_briefing(briefing: str):
     """Display the daily briefing in a styled panel."""
-    panel = Panel(
-        briefing,
-        title="📊 Daily Briefing",
-        border_style="green",
-        padding=(1, 2)
-    )
+    panel = Panel(briefing, title="📊 Daily Briefing", border_style="green", padding=(1, 2))
     console.print(panel)
 
 
@@ -84,17 +112,16 @@ def display_chat_message(message: str, is_user: bool = True):
         border_style = "green"
 
     panel = Panel(
-        message,
-        title=f"[{style}]{prefix}[/{style}]",
-        border_style=border_style,
-        padding=(0, 1)
+        message, title=f"[{style}]{prefix}[/{style}]", border_style=border_style, padding=(0, 1)
     )
     console.print(panel)
 
 
 async def interactive_chat_loop(session: Session):
     """Run the interactive chat loop."""
-    console.print("\n💬 [bold yellow]Chat Mode[/bold yellow] - Type your questions or 'quit' to exit\n")
+    console.print(
+        "\n💬 [bold yellow]Chat Mode[/bold yellow] - Type your questions or 'quit' to exit\n"
+    )
 
     while True:
         try:
@@ -102,7 +129,7 @@ async def interactive_chat_loop(session: Session):
             user_input = Prompt.ask("[cyan]You[/cyan]", console=console)
 
             # Check for exit commands
-            if user_input.lower() in ['quit', 'exit', 'q']:
+            if user_input.lower() in ["quit", "exit", "q"]:
                 console.print("[yellow]👋 Goodbye! Have a great day![/yellow]")
                 break
 
@@ -129,11 +156,8 @@ async def interactive_chat_loop(session: Session):
 @app.command()
 def chat(
     skip_briefing: bool = typer.Option(
-        False,
-        "--skip-briefing",
-        "-s",
-        help="Skip the daily briefing and go straight to chat"
-    )
+        False, "--skip-briefing", "-s", help="Skip the daily briefing and go straight to chat"
+    ),
 ):
     """Start an interactive chat session with the AI Daily Briefing bot."""
 
@@ -144,6 +168,9 @@ def chat(
     session = Session()
 
     async def run_session():
+        # Initialize session (prompts for zip code if needed)
+        await session.initialize()
+
         if not skip_briefing:
             # Show daily briefing
             console.print("\n[bold yellow]📊 Getting your daily briefing...[/bold yellow]")
@@ -169,6 +196,9 @@ def briefing():
     session = Session()
 
     async def get_briefing():
+        # Initialize session (prompts for zip code if needed)
+        await session.initialize()
+
         console.print("\n[bold yellow]📊 Getting your daily briefing...[/bold yellow]")
 
         with console.status("[bold blue]Fetching weather and news...", spinner="earth"):
@@ -186,4 +216,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
