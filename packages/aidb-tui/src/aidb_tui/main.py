@@ -11,14 +11,12 @@ from rich.text import Text
 
 from aidb_ai.main import AIDBAgent
 
-# Initialize Rich console with color support
+# init rich console
 console = Console()
 
-# Constants for zip code validation
 ZIP_CODE_MIN_LENGTH = 5
 ZIP_CODE_FULL_LENGTH = 10
 
-# Initialize Typer app
 app = typer.Typer(
     name="aidb",
     help="🤖 AI Daily Briefing - Your intelligent daily companion",
@@ -48,7 +46,6 @@ class Session:
 
                 if zip_code and zip_code.strip():
                     zip_code = zip_code.strip()
-                    # Basic validation - US zip codes are 5 digits or 5+4 format
                     if len(zip_code) >= ZIP_CODE_MIN_LENGTH and (
                         zip_code[:ZIP_CODE_MIN_LENGTH].isdigit()
                         or (
@@ -125,10 +122,8 @@ async def interactive_chat_loop(session: Session):
 
     while True:
         try:
-            # Get user input with a styled prompt
             user_input = Prompt.ask("[cyan]You[/cyan]", console=console)
 
-            # Check for exit commands
             if user_input.lower() in ["quit", "exit", "q"]:
                 console.print("[yellow]👋 Goodbye! Have a great day![/yellow]")
                 break
@@ -136,14 +131,11 @@ async def interactive_chat_loop(session: Session):
             if not user_input.strip():
                 continue
 
-            # Display user message
             display_chat_message(user_input, is_user=True)
 
-            # Show thinking spinner while getting response
             with console.status("[bold green]🤖 AI is thinking...", spinner="dots"):
                 response = await session.chat_response(user_input)
 
-            # Display AI response
             display_chat_message(response, is_user=False)
 
         except KeyboardInterrupt:
@@ -161,18 +153,14 @@ def chat(
 ):
     """Start an interactive chat session with the AI Daily Briefing bot."""
 
-    # Display welcome message
     display_welcome()
 
-    # Initialize chat session
     session = Session()
 
     async def run_session():
-        # Initialize session (prompts for zip code if needed)
         await session.initialize()
 
         if not skip_briefing:
-            # Show daily briefing
             console.print("\n[bold yellow]📊 Getting your daily briefing...[/bold yellow]")
 
             with console.status("[bold blue]Fetching weather and news...", spinner="earth"):
@@ -180,10 +168,8 @@ def chat(
 
             display_daily_briefing(briefing)
 
-        # Start interactive chat
         await interactive_chat_loop(session)
 
-    # Run the async session
     asyncio.run(run_session())
 
 
@@ -196,7 +182,6 @@ def briefing():
     session = Session()
 
     async def get_briefing():
-        # Initialize session (prompts for zip code if needed)
         await session.initialize()
 
         console.print("\n[bold yellow]📊 Getting your daily briefing...[/bold yellow]")

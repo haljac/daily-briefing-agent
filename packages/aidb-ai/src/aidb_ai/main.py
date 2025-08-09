@@ -14,8 +14,13 @@ load_dotenv()
 class AgentDeps:
     """Dependencies for the AI agent."""
 
-    def __init__(self, news_api_key: str, zip_code: str | None = None):
+    def __init__(
+            self,
+            news_api_key: str,
+            weather_api_key: str,
+            zip_code: str | None = None):
         self.news_api_key = news_api_key
+        self.weather_api_key = weather_api_key
         self.zip_code = zip_code
 
 
@@ -42,8 +47,12 @@ class AIDBAgent:
     def _create_deps(self) -> AgentDeps:
         """Create dependencies for the agent."""
         news_api_key = os.getenv("NEWS_API_KEY", "")
+        weather_api_key = os.getenv("WEATHER_API_KEY", "")
         zip_code = self.get_zip_code()
-        return AgentDeps(news_api_key=news_api_key, zip_code=zip_code)
+        return AgentDeps(
+            news_api_key=news_api_key,
+            weather_api_key=weather_api_key,
+            zip_code=zip_code)
 
     def get_zip_code(self) -> str | None:
         """Get the configured zip code."""
@@ -132,6 +141,57 @@ Use the get_headlines tool to fetch real news headlines when requested.
                     {
                         "title": f"Unexpected error: {e}",
                         "description": "An error occurred while fetching news",
+                    }
+                ]
+
+    @agent.tool
+    async def get_weather(
+        ctx: RunContext[AgentDeps]
+    ) -> list[dict[str, Any]]:
+        """Fetch top news headlines from WeatherAPI."""
+        if not ctx.deps.news_api_key:
+            return [
+                {
+                    "title": "Weather API key not configured",
+                    "description": "Please set WEATHER_API_KEY environment variable",
+                }
+            ]
+
+        url = (
+            f"http://api.weatherapi.com/v1/current.json?key={ctx.deps.weather_api_key}&q={ctx.deps.zip_code or 'auto:ip'}"
+        )
+
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url)
+                response.raise_for_status()
+                data = response.json()
+                weather = data.get("current", {})
+                location = data.get("location", {})
+                city = location.get("name", ""),
+                region = location.get("region", ""),
+                country =location.get("country", ""),
+
+                return [
+                    {
+                        "title": f"Current Weather for {city}, {region}, {country}",
+                        "temp_f": weather.get("temp_f", ""),
+                        "humidity": weather.get("humidity", ""),
+                        "last_updated": weather.get("last_updated", ""),
+                    }
+                ]
+            except httpx.RequestError as e:
+                return [
+                    {
+                        "title": f"Error fetching weather: {e}",
+                        "description": "Could not retrieve current weather",
+                    }
+                ]
+            except Exception as e:
+                return [
+                    {
+                        "title": f"Unexpected error: {e}",
+                        "description": "An error occurred while fetching weather",
                     }
                 ]
 
